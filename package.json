@@ -5,7 +5,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "gen": "drizzle-kit generate",
-    "migrate": " tsx src/drizzle/migrate.ts",
+    "migrate": " tsx src/Drizzle/migrate.ts",
     "studio": "drizzle-kit studio",
     "push": " drizzle-kit generate && tsx src/drizzle/migrate.ts"
   },
@@ -28,7 +28,7 @@
     "@types/node": "^20.17.30",
     "@types/nodemailer": "^6.4.15",
     "@types/pg": "^8.11.6",
-    "drizzle-kit": "^0.22.2",
+    "drizzle-kit": "^0.22.8",
     "ts-node": "^10.9.2",
     "tsx": "^4.7.1",
     "typescript": "^5.5.3"

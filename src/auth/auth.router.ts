@@ -6,29 +6,35 @@ import { authMiddleware } from '../middlewares/authmiddlewares';
 
 export const authRouter = new Hono();
 
-// Register system user - no authentication required
+// Register system user
 authRouter.post(
     "/signup", 
     zValidator('json', authSchema, (result, c) => {
         if (!result.success) {
-            return c.json(result.error, 400);
+            return c.json({
+                error: "Validation failed",
+                details: result.error.issues
+            }, 400);
         }
     }), 
     signup
 );
 
-// Login system user - no authentication required
+// Login system user
 authRouter.post(
     "/login", 
     zValidator('json', authSchema, (result, c) => {
         if (!result.success) {
-            return c.json(result.error, 400);
+            return c.json({
+                error: "Validation failed",
+                details: result.error.issues
+            }, 400);
         }
     }), 
     loginUser
 );
 
-// Get current user profile - requires authentication
+// Get current user profile
 authRouter.get(
     "/me", 
     authMiddleware, 

@@ -1,44 +1,56 @@
 import { db } from "../Drizzle/db";
 import { auth, users } from "../Drizzle/schema";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
-// Create auth record for a user
 export const createAuthUserService = async (authData: {
     userId: number;
     passwordHash: string;
     salt: string;
 }) => {
-    const createAuth = await db.insert(auth).values(authData).returning({ id: auth.id }).execute();
-    return createAuth.length > 0 ? createAuth[0].id : null;
+    try {
+        const [createAuth] = await db.insert(auth).values(authData).returning();
+        return createAuth;
+    } catch (error) {
+        console.error("Error creating auth record:", error);
+        throw new Error("Failed to create auth record");
+    }
 };
 
-// Get user by username for login
 export const userLoginService = async (username: string) => {
-    const user = await db.query.users.findFirst({
-        where: eq(users.username, username),
-        columns: {
-            id: true,
-            username: true,
-            password: true,
-            role: true,
-            createdAt: true
+    try {
+        const user = await db.query.users.findFirst({
+            where: eq(users.username, username),
+            with: {
+                auth: true
+            }
+        });
+        
+        if (!user) {
+            return null;
         }
-    });
-    
-    return user || null;
+
+        return {
+            ...user,
+            password: user.password,
+            auth: user.auth
+        };
+    } catch (error) {
+        console.error("Database error in userLoginService:", error);
+        throw new Error("Database operation failed");
+    }
 };
 
-// Get user by ID (for authentication checks)
 export const getUserByIdService = async (userId: number) => {
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-        columns: {
-            id: true,
-            username: true,
-            role: true,
-            isActive: true
-        }
-    });
-    
-    return user || null;
+    try {
+        return await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            with: {
+                auth: true
+            }
+        });
+    } catch (error) {
+        console.error("Error in getUserByIdService:", error);
+        throw new Error("Failed to fetch user");
+    }
 };

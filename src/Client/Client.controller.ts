@@ -11,10 +11,20 @@ import { ApiResponse } from "../utils/apiResponse";
 export const registerClient = async (c: Context) => {
   try {
     const clientData = await c.req.json();
-    const newClient = await createClient({
-      ...clientData,
-      createdBy: c.get("userId"),
-    });
+    
+    // Add manual date conversion here
+    const processedData = clientData.dateOfBirth 
+      ? {
+          ...clientData,
+          dateOfBirth: new Date(`${clientData.dateOfBirth}T00:00:00.000Z`),
+          createdBy: c.get("userId"),
+        }
+      : {
+          ...clientData,
+          createdBy: c.get("userId"),
+        };
+
+    const newClient = await createClient(processedData);
     return c.json(ApiResponse.success(newClient), 201);
   } catch (error: any) {
     return c.json(ApiResponse.error(error.message), 400);
@@ -61,7 +71,16 @@ export const updateClientProfile = async (c: Context) => {
     }
 
     const updateData = await c.req.json();
-    const updatedClient = await updateClient(id, updateData);
+    
+    // Add manual date conversion here
+    const processedUpdateData = updateData.dateOfBirth
+      ? {
+          ...updateData,
+          dateOfBirth: new Date(`${updateData.dateOfBirth}T00:00:00.000Z`),
+        }
+      : updateData;
+
+    const updatedClient = await updateClient(id, processedUpdateData);
 
     if (!updatedClient) {
       return c.json(ApiResponse.error("Client not found"), 404);

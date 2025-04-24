@@ -37,7 +37,7 @@ authRouter.post(
 // Get current user profile
 authRouter.get(
     "/me", 
-    authMiddleware, 
+    // authMiddleware, 
     getCurrentUser
 );
 

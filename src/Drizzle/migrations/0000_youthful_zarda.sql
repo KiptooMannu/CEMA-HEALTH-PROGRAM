@@ -16,6 +16,18 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "auth" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"password_hash" varchar(255) NOT NULL,
+	"salt" varchar(255) NOT NULL,
+	"refresh_token" text,
+	"token_expires_at" timestamp,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now(),
+	CONSTRAINT "auth_user_id_unique" UNIQUE("user_id")
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "clients" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"first_name" varchar(255) NOT NULL,
@@ -61,6 +73,12 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"is_active" boolean DEFAULT true,
 	CONSTRAINT "users_username_unique" UNIQUE("username")
 );
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "auth" ADD CONSTRAINT "auth_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "clients" ADD CONSTRAINT "clients_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;

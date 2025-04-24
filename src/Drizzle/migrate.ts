@@ -64,6 +64,20 @@ async function migration() {
       );
     `);
 
+    // Add the auth table after users since it references users
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS auth (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        password_hash VARCHAR(255) NOT NULL,
+        salt VARCHAR(255) NOT NULL,
+        refresh_token TEXT,
+        token_expires_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS clients (
         id SERIAL PRIMARY KEY,
@@ -105,7 +119,24 @@ async function migration() {
       );
     `);
 
-    console.log('======== All tables created successfully ========');
+    // Add indexes for better performance
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_auth_user_id ON auth(user_id);
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_clients_created_by ON clients(created_by);
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_programs_created_by ON programs(created_by);
+    `);
+
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_enrollments_created_by ON enrollments(created_by);
+    `);
+
+    console.log('======== All tables and indexes created successfully ========');
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error('Migration error:', err.message);

@@ -17,6 +17,18 @@ export const users = pgTable("users", {
   isActive: boolean("is_active").default(true),
 });
 
+// Auth table for authentication data
+export const auth = pgTable("auth", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  salt: varchar("salt", { length: 255 }).notNull(),
+  refreshToken: text("refresh_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Clients table
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
@@ -56,11 +68,36 @@ export const enrollments = pgTable("enrollments", {
 });
 
 // Relations
-export const clientsRelations = relations(clients, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
+  auth: one(auth, {
+    fields: [users.id],
+    references: [auth.userId],
+  }),
+  clients: many(clients),
+  programs: many(programs),
   enrollments: many(enrollments),
 }));
 
-export const programsRelations = relations(programs, ({ many }) => ({
+export const authRelations = relations(auth, ({ one }) => ({
+  user: one(users, {
+    fields: [auth.userId],
+    references: [users.id],
+  }),
+}));
+
+export const clientsRelations = relations(clients, ({ one, many }) => ({
+  createdBy: one(users, {
+    fields: [clients.createdBy],
+    references: [users.id],
+  }),
+  enrollments: many(enrollments),
+}));
+
+export const programsRelations = relations(programs, ({ one, many }) => ({
+  createdBy: one(users, {
+    fields: [programs.createdBy],
+    references: [users.id],
+  }),
   enrollments: many(enrollments),
 }));
 
@@ -72,5 +109,9 @@ export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
   program: one(programs, {
     fields: [enrollments.programId],
     references: [programs.id],
+  }),
+  createdBy: one(users, {
+    fields: [enrollments.createdBy],
+    references: [users.id],
   }),
 }));

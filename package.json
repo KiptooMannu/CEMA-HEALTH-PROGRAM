@@ -1,0 +1,36 @@
+{
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "seed": "ts-node src/drizzle/seed.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "gen": "drizzle-kit generate",
+    "migrate": " tsx src/drizzle/migrate.ts",
+    "studio": "drizzle-kit studio",
+    "push": " drizzle-kit generate && tsx src/drizzle/migrate.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.1",
+    "@hono/prometheus": "^1.0.1",
+    "@hono/zod-validator": "^0.2.2",
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.31.1",
+    "hono": "^4.7.7",
+    "nodemailer": "^6.9.14",
+    "pg": "^8.15.5",
+    "prom-client": "^15.1.2",
+    "stripe": "^16.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "^20.11.17",
+    "@types/nodemailer": "^6.4.15",
+    "@types/pg": "^8.11.6",
+    "drizzle-kit": "^0.22.2",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.7.1",
+    "typescript": "^5.5.3"
+  }
+}

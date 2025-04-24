@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ES2022",
+    
+    /* Modules */
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    
+    /* Paths and Base URL */
+  /* Paths and Base URL */
+  "baseUrl": "./src",                            // Set the base URL for non-relative imports
+  "paths": {
+    "@models/*": ["models/*"],                   // Example: Custom paths for models
+    "@services/*": ["services/*"],               // Example: Custom paths for services
+    "@controllers/*": ["controllers/*"],         // Example: Custom paths for controllers
+    "@utils/*": ["utils/*"]                      // Example: Custom paths for utility functions
+  },
+    
+    /* Interop and Casing */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Type Checking */
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

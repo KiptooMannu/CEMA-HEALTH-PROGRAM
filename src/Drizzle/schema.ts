@@ -45,8 +45,8 @@ export const auth = pgTable("auth", {
 // Clients table
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
-  firstName: varchar("first_name", { length: 255 }).notNull(),
-  lastName: varchar("last_name", { length: 255 }).notNull(),
+  first_name: varchar("first_name", { length: 255 }).notNull(),
+  last_name: varchar("last_name", { length: 255 }).notNull(),
   dateOfBirth: timestamp("date_of_birth"),
   gender: varchar("gender", { length: 50 }),
   address: text("address"),

@@ -1,7 +1,7 @@
 export interface Client {
     id: number;
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     dateOfBirth?: Date | null;
     gender?: string | null;
     address?: string | null;

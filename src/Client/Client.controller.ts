@@ -7,27 +7,67 @@ import {
   getClientEnrollments,
 } from "./Client.service";
 import { ApiResponse } from "../utils/apiResponse";
+import { z } from "zod";
+
+// Client Schema for validation (matches database fields)
+const ClientSchema = z.object({
+  first_name: z.string().min(1, "First name is required"), // lowercase
+  last_name: z.string().min(1, "Last name is required"),   // lowercase
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional().nullable(),
+  gender: z.enum(["Male", "Female", "Other", "Prefer not to say"]).optional().nullable(),
+  address: z.string().max(255).optional().nullable(),
+  phone: z.string().max(20).optional().nullable(),
+  email: z.string().email("Invalid email format").max(100).optional().nullable(),
+});
+
+const normalizeClientData = (rawData: any) => ({
+  first_name: rawData.first_name || rawData.firstName || rawData.first_Name || "",
+  last_name: rawData.last_name || rawData.lastName || rawData.last_Name || "",
+  dateOfBirth: rawData.dateOfBirth,
+  gender: rawData.gender,
+  address: rawData.address,
+  phone: rawData.phone,
+  email: rawData.email
+});
 
 export const registerClient = async (c: Context) => {
   try {
-    const clientData = await c.req.json();
+    const rawData = await c.req.json();
     
-    // Add manual date conversion here
-    const processedData = clientData.dateOfBirth 
-      ? {
-          ...clientData,
-          dateOfBirth: new Date(`${clientData.dateOfBirth}T00:00:00.000Z`),
-          createdBy: c.get("userId"),
-        }
-      : {
-          ...clientData,
-          createdBy: c.get("userId"),
-        };
+    // Normalize field names to database schema
+    const normalizedData = normalizeClientData(rawData);
 
-    const newClient = await createClient(processedData);
-    return c.json(ApiResponse.success(newClient), 201);
+    // Validate input data
+    const validationResult = ClientSchema.safeParse(normalizedData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => ({
+        field: err.path[0],
+        message: err.message
+      }));
+      return c.json(ApiResponse.error("Validation failed", { errors }), 400);
+    }
+
+    // Prepare data for database
+    const dbData = {
+      ...validationResult.data,
+      createdBy: c.get("userId"),
+      dateOfBirth: validationResult.data.dateOfBirth 
+        ? new Date(`${validationResult.data.dateOfBirth}T00:00:00.000Z`)
+        : null
+    };
+
+    const newClient = await createClient(dbData);
+    return c.json(
+      ApiResponse.success(newClient, "Client registered successfully"), 
+      201
+    );
+
   } catch (error: any) {
-    return c.json(ApiResponse.error(error.message), 400);
+    console.error("Registration error:", error);
+    return c.json(
+      ApiResponse.error(error.message || "Internal server error"), 
+      500
+    );
   }
 };
 
@@ -70,23 +110,33 @@ export const updateClientProfile = async (c: Context) => {
       return c.json(ApiResponse.error("Invalid client ID"), 400);
     }
 
-    const updateData = await c.req.json();
-    
-    // Add manual date conversion here
-    const processedUpdateData = updateData.dateOfBirth
-      ? {
-          ...updateData,
-          dateOfBirth: new Date(`${updateData.dateOfBirth}T00:00:00.000Z`),
-        }
-      : updateData;
+    const rawData = await c.req.json();
+    const normalizedData = normalizeClientData(rawData);
 
-    const updatedClient = await updateClient(id, processedUpdateData);
+    // Validate input data
+    const validationResult = ClientSchema.safeParse(normalizedData);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => ({
+        field: err.path[0],
+        message: err.message
+      }));
+      return c.json(ApiResponse.error("Validation failed", { errors }), 400);
+    }
 
+    // Prepare data for database
+    const dbData = {
+      ...validationResult.data,
+      dateOfBirth: validationResult.data.dateOfBirth 
+        ? new Date(`${validationResult.data.dateOfBirth}T00:00:00.000Z`)
+        : null
+    };
+
+    const updatedClient = await updateClient(id, dbData);
     if (!updatedClient) {
       return c.json(ApiResponse.error("Client not found"), 404);
     }
 
-    return c.json(ApiResponse.success(updatedClient));
+    return c.json(ApiResponse.success(updatedClient, "Client updated successfully"));
   } catch (error: any) {
     return c.json(ApiResponse.error(error.message), 500);
   }

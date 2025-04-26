@@ -16,8 +16,8 @@ export const getClientById = async (id: number) => {
 export const searchClients = async (query: string) => {
   return await db.select().from(clients).where(
     or(
-      like(clients.firstName, `%${query}%`),
-      like(clients.lastName, `%${query}%`),
+      like(clients.first_name, `%${query}%`),  // Changed to first_name
+      like(clients.last_name, `%${query}%`),   // Changed to last_name
       like(clients.email, `%${query}%`),
       like(clients.phone, `%${query}%`)
     )

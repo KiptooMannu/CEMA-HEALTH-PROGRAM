@@ -7,15 +7,28 @@ export const programStatusEnum = pgEnum("program_status", ["active", "inactive",
 export const enrollmentStatusEnum = pgEnum("enrollment_status", ["active", "completed", "dropped"]);
 
 // Users table (for system users like doctors)
+// schema.ts
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
   role: userRoleEnum("role").default("doctor"),
+  // Add these new fields
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 20 }),
+  dateOfBirth: timestamp("date_of_birth"),
+  gender: varchar("gender", { length: 50 }),
+  address: text("address"),
+  // Original fields
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   isActive: boolean("is_active").default(true),
 });
+
+
+
 
 // Auth table for authentication data
 export const auth = pgTable("auth", {

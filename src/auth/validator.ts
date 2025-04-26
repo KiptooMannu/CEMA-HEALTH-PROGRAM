@@ -32,3 +32,19 @@ export const enrollmentSchema = z.object({
     status: z.enum(['active', 'completed', 'dropped']).optional().default('active'),
     notes: z.string().optional()
 });
+
+
+// validators.ts
+export const registrationSchema = z.object({
+    username: z.string().min(1, "Username is required"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Invalid email format"),
+    phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
+    confirmPassword: z.string().optional(),
+    dateOfBirth: z.string().optional().nullable(),
+    gender: z.string().optional().nullable(),
+    address: z.string().optional().nullable(),
+    role: z.enum(["admin", "doctor", "staff"]).default("doctor")
+  });

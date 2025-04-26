@@ -8,41 +8,62 @@ import { createAuthUserService, userLoginService } from "./auth.service";
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret_key";
 
+// auth.controller.ts
 export const signup = async (c: Context) => {
     console.log('[Auth Controller] Signup request received');
     try {
-        const { username, password, role } = await c.req.json();
-        console.log('[Auth Controller] Signup data:', { username, role });
+        const { 
+            username, 
+            password, 
+            firstName,
+            lastName,
+            email,
+            phone,
+            confirmPassword,
+            dateOfBirth,
+            gender,
+            address,
+            role = 'doctor' // Default role
+        } = await c.req.json();
 
-        if (typeof password !== 'string' || password.length < 8) {
-            console.log('[Auth Controller] Invalid password format');
-            return c.json({ error: "Password must be a string with at least 8 characters" }, 400);
+        // Validate password match if confirmPassword exists
+        if (confirmPassword && password !== confirmPassword) {
+            return c.json({ error: "Passwords do not match" }, 400);
         }
 
-        console.log('[Auth Controller] Starting transaction for user creation');
+        // Check password length
+        if (typeof password !== 'string' || password.length < 8) {
+            return c.json({ error: "Password must be at least 8 characters" }, 400);
+        }
+
         const result = await db.transaction(async (tx) => {
-            console.log('[Auth Controller] Checking for existing user:', username);
+            // Check existing user
             const existingUser = await tx.query.users.findFirst({
                 where: eq(users.username, username)
             });
             
             if (existingUser) {
-                console.log('[Auth Controller] User already exists:', username);
                 throw new Error("User already exists");
             }
 
-            console.log('[Auth Controller] Generating password hash');
+            // Create user record
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            console.log('[Auth Controller] Creating user record');
             const [newUser] = await tx.insert(users).values({
                 username,
                 password: hashedPassword,
                 role,
+                firstName,
+                lastName,
+                email,
+                phone,
+                dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+                gender: gender || null,
+                address: address || null
             }).returning();
 
-            console.log('[Auth Controller] Creating auth record for user:', newUser.id);
+            // Create auth record
             await tx.insert(auth).values({
                 userId: newUser.id,
                 passwordHash: hashedPassword,
@@ -52,47 +73,55 @@ export const signup = async (c: Context) => {
             return newUser;
         });
 
-        console.log('[Auth Controller] User created successfully:', {
-            userId: result.id,
-            username: result.username
-        });
         return c.json({ 
             message: "User created successfully",
-            userId: result.id 
+            user: {
+                id: result.id,
+                username: result.username,
+                role: result.role,
+                firstName: result.firstName,
+                lastName: result.lastName
+            }
         }, 201);
 
     } catch (error: any) {
-        console.error('[Auth Controller] Signup error:', {
-            error: error.message,
-            stack: error.stack
-        });
+        console.error('Registration error:', error); // Add this for debugging
         return c.json({ 
-            error: error.message === "User already exists" ? error.message : "Registration failed",
+            error: error.message || "Registration failed",
             statusCode: error.message === "User already exists" ? 409 : 500
         });
     }
 };
-
 export const loginUser = async (c: Context) => {
     console.log('[Auth Controller] Login request received');
     try {
         const { username, password } = await c.req.json();
-        console.log('[Auth Controller] Login attempt for user:', username);
+        
+        // Find user by username only
+        const user = await db.query.users.findFirst({
+            where: eq(users.username, username),
+            columns: {
+                id: true,
+                username: true,
+                password: true,
+                role: true,
+                isActive: true
+            }
+        });
 
-        const user = await userLoginService(username);
         if (!user) {
-            console.log('[Auth Controller] Invalid credentials (user not found):', username);
             return c.json({ error: "Invalid credentials" }, 401);
         }
 
-        console.log('[Auth Controller] Comparing password hash');
+        if (!user.isActive) {
+            return c.json({ error: "Account is inactive" }, 403);
+        }
+
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
-            console.log('[Auth Controller] Invalid credentials (wrong password)');
             return c.json({ error: "Invalid credentials" }, 401);
         }
 
-        console.log('[Auth Controller] Generating JWT token for user:', user.id);
         const token = jwt.sign(
             { 
                 userId: user.id,
@@ -103,37 +132,27 @@ export const loginUser = async (c: Context) => {
             { expiresIn: '1h' }
         );
 
-        console.log('[Auth Controller] Login successful:', {
-            userId: user.id,
-            username: user.username
-        });
         return c.json({ 
             message: "Login successful", 
-            token, 
+            token,
             user: {
                 id: user.id,
                 username: user.username,
-                role: user.role,
-                createdAt: user.createdAt
+                role: user.role
             }
         }, 200);
 
     } catch (error: any) {
-        console.error('[Auth Controller] Login error:', {
-            error: error.message,
-            stack: error.stack
-        });
+        console.error('Login error:', error);
         return c.json({ error: "Authentication failed" }, 500);
     }
 };
-export const getCurrentUser = async (c: Context) => {
-    console.log('[Auth Controller] Current user request received');
-    
-    // 1. Check if Authorization header exists (optional auth)
-    const authHeader = c.req.header('Authorization');
-    let user = null;
 
-    // 2. If token is provided, try to verify it
+
+
+export const getCurrentUser = async (c: Context) => {
+    const authHeader = c.req.header('Authorization');
+    
     if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.split(' ')[1];
         try {
@@ -142,28 +161,37 @@ export const getCurrentUser = async (c: Context) => {
                 username: string; 
                 role: string 
             };
-            user = {
-                id: decoded.userId,
-                username: decoded.username,
-                role: decoded.role,
-                isAuthenticated: true,
-            };
+            
+            // Fetch complete user data
+            const user = await db.query.users.findFirst({
+                where: eq(users.id, parseInt(decoded.userId)),
+                columns: {
+                    id: true,
+                    username: true,
+                    role: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    phone: true,
+                    createdAt: true
+                }
+            });
+
+            if (user) {
+                return c.json({
+                    ...user,
+                    isAuthenticated: true
+                }, 200);
+            }
         } catch (error) {
-            console.log('[Auth Controller] Invalid token, treating as guest');
-            // Token is invalid, proceed as unauthenticated
+            console.log('Invalid token');
         }
     }
 
-    // 3. If no valid token, return a default/guest user
-    if (!user) {
-        user = {
-            id: 'guest',
-            username: 'guest',
-            role: 'guest',
-            isAuthenticated: false,
-        };
-    }
-
-    console.log('[Auth Controller] Returning user:', user);
-    return c.json(user, 200);
+    return c.json({
+        id: 'guest',
+        username: 'guest',
+        role: 'guest',
+        isAuthenticated: false,
+    }, 200);
 };

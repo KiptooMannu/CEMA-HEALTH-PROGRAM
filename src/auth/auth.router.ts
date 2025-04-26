@@ -1,15 +1,16 @@
 import { Hono } from 'hono';
 import { signup, loginUser, getCurrentUser } from './auth.controller';
 import { zValidator } from '@hono/zod-validator';
-import { authSchema } from './validator';
+import { authSchema ,registrationSchema } from './validator';
 import { authMiddleware } from '../middlewares/authmiddlewares';
 
 export const authRouter = new Hono();
 
 // Register system user
+// auth.router.ts
 authRouter.post(
     "/signup", 
-    zValidator('json', authSchema, (result, c) => {
+    zValidator('json', registrationSchema, (result, c) => {
         if (!result.success) {
             return c.json({
                 error: "Validation failed",

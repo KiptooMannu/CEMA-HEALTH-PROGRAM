@@ -6,7 +6,7 @@ import {
   userRoleEnum,
   programStatusEnum,
   enrollmentStatusEnum,
-} from "./schema"; // Adjust path as needed
+} from "./schema";
 
 dotenv.config();
 
@@ -51,13 +51,41 @@ async function migration() {
       END $$;
     `);
 
-    // Create tables with IF NOT EXISTS
+    // Drop tables in reverse order of dependencies
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS users (
+      DROP TABLE IF EXISTS enrollments CASCADE;
+    `);
+
+    await db.execute(sql`
+      DROP TABLE IF EXISTS auth CASCADE;
+    `);
+
+    await db.execute(sql`
+      DROP TABLE IF EXISTS programs CASCADE;
+    `);
+
+    await db.execute(sql`
+      DROP TABLE IF EXISTS clients CASCADE;
+    `);
+
+    await db.execute(sql`
+      DROP TABLE IF EXISTS users CASCADE;
+    `);
+
+    // Recreate tables with all new columns
+    await db.execute(sql`
+      CREATE TABLE users (
         id SERIAL PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         role ${sql.raw(userRoleEnum.enumName)} DEFAULT 'doctor',
+        first_name VARCHAR(255) NOT NULL,
+        last_name VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        phone VARCHAR(20),
+        date_of_birth TIMESTAMP,
+        gender VARCHAR(50),
+        address TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
         is_active BOOLEAN DEFAULT TRUE
@@ -66,7 +94,7 @@ async function migration() {
 
     // Add the auth table after users since it references users
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS auth (
+      CREATE TABLE auth (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
         password_hash VARCHAR(255) NOT NULL,
@@ -79,7 +107,7 @@ async function migration() {
     `);
 
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS clients (
+      CREATE TABLE clients (
         id SERIAL PRIMARY KEY,
         first_name VARCHAR(255) NOT NULL,
         last_name VARCHAR(255) NOT NULL,
@@ -95,7 +123,7 @@ async function migration() {
     `);
 
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS programs (
+      CREATE TABLE programs (
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
@@ -107,7 +135,7 @@ async function migration() {
     `);
 
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS enrollments (
+      CREATE TABLE enrollments (
         id SERIAL PRIMARY KEY,
         client_id INTEGER REFERENCES clients(id),
         program_id INTEGER REFERENCES programs(id),
@@ -121,22 +149,22 @@ async function migration() {
 
     // Add indexes for better performance
     await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_auth_user_id ON auth(user_id);
+      CREATE INDEX idx_auth_user_id ON auth(user_id);
     `);
 
     await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_clients_created_by ON clients(created_by);
+      CREATE INDEX idx_clients_created_by ON clients(created_by);
     `);
 
     await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_programs_created_by ON programs(created_by);
+      CREATE INDEX idx_programs_created_by ON programs(created_by);
     `);
 
     await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_enrollments_created_by ON enrollments(created_by);
+      CREATE INDEX idx_enrollments_created_by ON enrollments(created_by);
     `);
 
-    console.log('======== All tables and indexes created successfully ========');
+    console.log('======== All tables recreated with new columns successfully ========');
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error('Migration error:', err.message);

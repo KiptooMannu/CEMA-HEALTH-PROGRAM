@@ -1,0 +1,1092 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+    DialogClose
+} from "@/components/ui/dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle, CheckCircle, Plus, Search, UserPlus, Users, XCircle, Zap } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Mock API functions (replace with your actual API calls)
+const api = {
+    // Client API
+    registerClient: async (clientData: any) => {
+        // Simulate API call delay
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Simulate success
+        return { ...clientData, id: crypto.randomUUID(), message: "Client registered successfully" };
+        // Simulate error
+        // throw new Error("Failed to register client");
+    },
+    getClient: async (id: string) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Simulate success
+        return { id, name: 'John Doe', dob: '1990-01-15', gender: 'Male', contact: '1234567890', address: '123 Main St' };
+    },
+    searchClient: async (query: string) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Simulate success
+        const allClients = [
+            { id: '1', name: 'John Doe', dob: '1990-01-15', gender: 'Male', contact: '1234567890', address: '123 Main St' },
+            { id: '2', name: 'Jane Smith', dob: '1985-05-20', gender: 'Female', contact: '9876543210', address: '456 Oak Ave' },
+            { id: '3', name: 'Robert Jones', dob: '2000-10-10', gender: 'Male', contact: '5551234567', address: '789 Pine Ln' },
+            { id: '4', name: 'Alice Brown', dob: '1992-03-25', gender: 'Female', contact: '1112223334', address: '246 Elm St' },
+            { id: '5', name: 'Bob Williams', dob: '1988-07-01', gender: 'Male', contact: '4445556667', address: '135 Maple Dr' },
+        ];
+        const filteredClients = allClients.filter((client) =>
+            Object.values(client).some((val) =>
+                String(val).toLowerCase().includes(query.toLowerCase())
+            )
+        );
+        return filteredClients;
+    },
+    getClientProfile: async (id: string) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Simulate success
+        return {
+            id,
+            name: 'John Doe',
+            dob: '1990-01-15',
+            gender: 'Male',
+            contact: '1234567890',
+            address: '123 Main St',
+            programs: [
+                { id: 'p1', name: 'TB Program', status: 'Active', enrollmentDate: '2024-01-20' },
+                { id: 'p2', name: 'HIV Program', status: 'Enrolled', enrollmentDate: '2024-03-10' },
+            ],
+        };
+    },
+    updateClientProfile: async (id: string, clientData: any) => {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Simulate success
+        return { ...clientData, id, message: "Client profile updated successfully" };
+        // Simulate error
+        // throw new Error("Failed to update client profile");
+    },
+
+    // Program API
+    createHealthProgram: async (programData: any) => {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Simulate success
+        return { ...programData, id: crypto.randomUUID(), message: "Program created successfully" };
+        // Simulate error
+        // throw new Error("Failed to create program");
+    },
+    listPrograms: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Simulate success
+        return [
+            { id: 'p1', name: 'TB Program', description: 'Program for Tuberculosis treatment' },
+            { id: 'p2', name: 'HIV Program', description: 'Program for HIV/AIDS management' },
+            { id: 'p3', name: 'Malaria Program', description: 'Program for Malaria prevention and treatment' },
+        ];
+    },
+    getProgram: async (id: string) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return { id, name: 'TB Program', description: 'Program for Tuberculosis treatment' };
+    },
+    updateHealthProgram: async (id: string, programData: any) => {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return { ...programData, id, message: "Program updated successfully" };
+    },
+    removeProgram: async (id: string) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return { id, message: "Program deleted successfully" };
+    },
+
+    // Enrollment API
+    createEnrollment: async (enrollmentData: any) => {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return { ...enrollmentData, id: crypto.randomUUID(), enrollmentDate: new Date().toISOString().split('T')[0], message: "Client enrolled successfully" };
+    },
+    updateEnrollmentStatus: async (id: string, status: string) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return { id, status, message: "Enrollment status updated successfully" };
+    },
+    getClientPrograms: async (clientId: string) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return [
+            { id: 'p1', name: 'TB Program', status: 'Active', enrollmentDate: '2024-01-20' },
+            { id: 'p2', name: 'HIV Program', status: 'Enrolled', enrollmentDate: '2024-03-10' },
+        ];
+    },
+    getProgramClients: async (programId: string) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return [
+            { id: '1', name: 'John Doe', dob: '1990-01-15', gender: 'Male', contact: '1234567890', address: '123 Main St' },
+            { id: '2', name: 'Jane Smith', dob: '1985-05-20', gender: 'Female', contact: '9876543210', address: '456 Oak Ave' },
+        ];
+    },
+};
+
+// ===============================
+// Components
+// ===============================
+
+// --- Program Management Components ---
+
+const ProgramForm = ({
+    onProgramCreated,
+    initialValues,
+    onClose
+}: {
+    onProgramCreated?: (program: any) => void;
+    initialValues?: any;
+    onClose: () => void;
+}) => {
+    const [name, setName] = useState(initialValues?.name || '');
+    const [description, setDescription] = useState(initialValues?.description || '');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        try {
+            const programData = { name, description };
+            const newProgram = await api.createHealthProgram(programData);
+            onProgramCreated?.(newProgram);
+            setName('');
+            setDescription('');
+            onClose();
+        } catch (err: any) {
+            setError(err.message || 'Failed to create program');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    Program Name
+                </label>
+                <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder="Enter program name"
+                    className="mt-1"
+                    disabled={loading}
+                />
+            </div>
+            <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    Description
+                </label>
+                <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
+                    placeholder="Enter program description"
+                    className="mt-1"
+                    disabled={loading}
+                />
+            </div>
+            {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
+            <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={onClose} disabled={loading}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                    {loading ? 'Creating...' : 'Create Program'}
+                </Button>
+            </div>
+        </form>
+    );
+};
+
+const ProgramList = ({ programs, onSelectProgram, onViewDetails }: { programs: any[], onSelectProgram?: (program: any) => void, onViewDetails?: (program: any) => void }) => {
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {programs.map((program) => (
+                    <TableRow key={program.id}>
+                        <TableCell>{program.name}</TableCell>
+                        <TableCell>{program.description}</TableCell>
+                        <TableCell className="flex gap-2">
+                            {onSelectProgram && (
+                                <Button size="sm" onClick={() => onSelectProgram(program)}>
+                                    Select
+                                </Button>
+                            )}
+                            {onViewDetails && (
+                                <Button size="sm" onClick={() => onViewDetails(program)}>
+                                    View Details
+                                </Button>
+                            )}
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    );
+};
+
+const ProgramDetails = ({ program }: { program: any }) => {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>{program.name}</CardTitle>
+                <CardDescription>{program.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p>ID: {program.id}</p>
+                {/* Add more details here as needed */}
+            </CardContent>
+        </Card>
+    );
+};
+
+const ProgramManagement = () => {
+    const [programs, setPrograms] = useState<any[]>([]);
+    const [isCreating, setIsCreating] = useState(false);
+    const [selectedProgram, setSelectedProgram] = useState<any>(null);
+    const [viewedProgram, setViewedProgram] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchPrograms = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const programsData = await api.listPrograms();
+            setPrograms(programsData);
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch programs');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchPrograms();
+    }, [fetchPrograms]);
+
+    const handleProgramCreated = (newProgram: any) => {
+        setPrograms((prevPrograms) => [...prevPrograms, newProgram]);
+        setIsCreating(false);
+    };
+
+    const handleSelectProgram = (program: any) => {
+        setSelectedProgram(program);
+    };
+
+    const handleViewProgramDetails = (program: any) => {
+        setViewedProgram(program);
+    };
+
+    const handleCloseViewDetails = () => {
+        setViewedProgram(null);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-semibold">Health Programs</h2>
+                <Button onClick={() => setIsCreating(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Program
+                </Button>
+            </div>
+
+            <AnimatePresence>
+                {isCreating && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Create New Program</CardTitle>
+                                <CardDescription>
+                                    Fill in the details to create a new health program.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ProgramForm onProgramCreated={handleProgramCreated} onClose={() => setIsCreating(false)} />
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {loading ? (
+                <div>Loading programs...</div> // Replace with a proper loading indicator
+            ) : error ? (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            ) : (
+                <ProgramList programs={programs} onSelectProgram={handleSelectProgram} onViewDetails={handleViewProgramDetails} />
+            )}
+
+            {selectedProgram && (
+                <Dialog open={!!selectedProgram} onOpenChange={() => setSelectedProgram(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Program Details</DialogTitle>
+                            <DialogDescription>
+                                Details of the selected program.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <ProgramDetails program={selectedProgram} />
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="secondary">Close</Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
+            <Dialog open={!!viewedProgram} onOpenChange={handleCloseViewDetails}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Program Details</DialogTitle>
+                    </DialogHeader>
+                    {viewedProgram && <ProgramDetails program={viewedProgram} />}
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+};
+
+// --- Client Management Components ---
+const ClientForm = ({
+    onClientRegistered,
+    initialValues,
+    onClose
+}: {
+    onClientRegistered?: (client: any) => void;
+    initialValues?: any;
+    onClose: () => void;
+}) => {
+    const [name, setName] = useState(initialValues?.name || '');
+    const [dob, setDob] = useState(initialValues?.dob || '');
+    const [gender, setGender] = useState(initialValues?.gender || '');
+    const [contact, setContact] = useState(initialValues?.contact || '');
+    const [address, setAddress] = useState(initialValues?.address || '');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        try {
+            const clientData = { name, dob, gender, contact, address };
+            const newClient = await api.registerClient(clientData);
+            onClientRegistered?.(newClient);
+            setName('');
+            setDob('');
+            setGender('');
+            setContact('');
+            setAddress('');
+            onClose();
+        } catch (err: any) {
+            setError(err.message || 'Failed to register client');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    Name
+                </label>
+                <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder="Enter client name"
+                    className="mt-1"
+                    disabled={loading}
+                />
+            </div>
+            <div>
+                <label htmlFor="dob" className="block text-sm font-medium text-gray-700">
+                    Date of Birth
+                </label>
+                <Input
+                    id="dob"
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    required
+                    className="mt-1"
+                    disabled={loading}
+                />
+            </div>
+            <div>
+                <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+                    Gender
+                </label>
+                <Select onValueChange={setGender} value={gender} disabled={loading}>
+                    <SelectTrigger className="mt-1 w-full">
+                        <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div>
+                <label htmlFor="contact" className="block text-sm font-medium text-gray-700">
+                    Contact
+                </label>
+                <Input
+                    id="contact"
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                    required
+                    placeholder="Enter contact number"
+                    className="mt-1"
+                    disabled={loading}
+                />
+            </div>
+            <div>
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                    Address
+                </label>
+                <Textarea
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    required
+                    placeholder="Enter address"
+                    className="mt-1"
+                    disabled={loading}
+                />
+            </div>
+            {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
+            <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={onClose} disabled={loading}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                    {loading ? 'Registering...' : 'Register Client'}
+                </Button>
+            </div>
+        </form>
+    );
+};
+
+const ClientList = ({ clients, onViewProfile, onSelectClient }: { clients: any[], onViewProfile?: (client: any) => void, onSelectClient?: (client: any) => void }) => {
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Date of Birth</TableHead>
+                    <TableHead>Gender</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {clients.map((client) => (
+                    <TableRow key={client.id}>
+                        <TableCell>{client.name}</TableCell>
+                        <TableCell>{client.dob}</TableCell>
+                        <TableCell>{client.gender}</TableCell>
+                        <TableCell>{client.contact}</TableCell>
+                        <TableCell className="flex gap-2">
+                            {onViewProfile && (
+                                <Button size="sm" onClick={() => onViewProfile(client)}>
+                                    View Profile
+                                </Button>
+                            )}
+                            {onSelectClient && (
+                                <Button size="sm" onClick={() => onSelectClient(client)}>
+                                    Select
+                                </Button>
+                            )}
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    );
+};
+
+const ClientProfile = ({ client }: { client: any }) => {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>{client.name}</CardTitle>
+                <CardDescription>Client Profile</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <span className="font-semibold">ID:</span> {client.id}
+                </div>
+                <div>
+                    <span className="font-semibold">Date of Birth:</span> {client.dob}
+                </div>
+                <div>
+                    <span className="font-semibold">Gender:</span> {client.gender}
+                </div>
+                <div>
+                    <span className="font-semibold">Contact:</span> {client.contact}
+                </div>
+                <div>
+                    <span className="font-semibold">Address:</span> {client.address}
+                </div>
+                {client.programs && client.programs.length > 0 && (
+                    <div>
+                        <h4 className="font-semibold">Enrolled Programs:</h4>
+                        <ul>
+                            {client.programs.map((program: any) => (
+                                <li key={program.id}>
+                                    {program.name} - Status: {program.status} (Enrolled on: {program.enrollmentDate})
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+};
+
+const ClientSearch = ({ onClientSelected }: { onClientSelected?: (client: any) => void }) => {
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSearch = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const clients = await api.searchClient(query);
+            setResults(clients);
+        } catch (err: any) {
+            setError(err.message || 'Failed to search clients');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex gap-2">
+                <Input
+                    type="text"
+                    placeholder="Search clients..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    className="flex-1"
+                />
+                <Button onClick={handleSearch} disabled={loading}>
+                    {loading ? (
+                        <>
+                            <Search className="mr-2 h-4 w-4 animate-spin" />
+                            Searching...
+                        </>
+                    ) : (
+                        <>
+                            <Search className="mr-2 h-4 w-4" />
+                            Search
+                        </>
+                    )}
+                </Button>
+            </div>
+            {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
+            {loading ? (
+                <div>Loading...</div> // Replace with a proper loading indicator
+            ) : results.length > 0 ? (
+                <ClientList clients={results} onViewProfile={(client) => {
+                    // In a real app you'd likely want a dedicated state for the viewed client
+                    alert(JSON.stringify(client, null, 2));
+                }}
+                    onSelectClient={onClientSelected}
+                />
+            ) : (
+                <div>No clients found.</div>
+            )}
+        </div>);
+};
+
+const ClientManagement = () => {
+    const [clients, setClients] = useState<any[]>([]);
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [viewedClient, setViewedClient] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchClients = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // In a real app, you'd fetch all clients, but for this example, we'll keep it simple
+            setClients([]);
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch clients');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchClients();
+    }, [fetchClients]);
+
+    const handleClientRegistered = (newClient: any) => {
+        setClients((prevClients) => [...prevClients, newClient]);
+        setIsRegistering(false);
+    };
+
+    const handleViewClientProfile = async (client: any) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const profile = await api.getClientProfile(client.id);
+            setViewedClient(profile);
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch client profile');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCloseViewProfile = () => {
+        setViewedClient(null);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-semibold">Client Management</h2>
+                <Button onClick={() => setIsRegistering(true)}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Register Client
+                </Button>
+            </div>
+
+            <AnimatePresence>
+                {isRegistering && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Register New Client</CardTitle>
+                                <CardDescription>
+                                    Fill in the details to register a new client.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ClientForm onClientRegistered={handleClientRegistered} onClose={() => setIsRegistering(false)} />
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <ClientSearch onClientSelected={(client) => {
+                alert(`Selected client: ${client.name} (ID: ${client.id})`);
+            }} />
+
+            {loading && <div>Loading...</div>}
+            {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
+
+            {viewedClient && (
+                <Dialog open={!!viewedClient} onOpenChange={handleCloseViewProfile}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Client Profile</DialogTitle>
+                            <DialogDescription>
+                                Details of the selected client.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <ClientProfile client={viewedClient} />
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="secondary">Close</Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
+        </div>
+    );
+};
+
+// --- Enrollment Management Components ---
+const EnrollmentForm = ({
+    clients,
+    programs,
+    onEnrollmentCreated,
+    onClose
+}: {
+    clients: any[],
+    programs: any[],
+    onEnrollmentCreated?: (enrollment: any) => void,
+    onClose: () => void;
+}) => {
+    const [clientId, setClientId] = useState('');
+    const [programId, setProgramId] = useState('');
+    const [status, setStatus] = useState('Enrolled');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        try {
+            const enrollmentData = { clientId, programId, status };
+            const newEnrollment = await api.createEnrollment(enrollmentData);
+            onEnrollmentCreated?.(newEnrollment);
+            setClientId('');
+            setProgramId('');
+            setStatus('Enrolled');
+            onClose();
+        } catch (err: any) {
+            setError(err.message || 'Failed to create enrollment');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <label htmlFor="client" className="block text-sm font-medium text-gray-700">
+                    Client
+                </label>
+                <Select onValueChange={setClientId} value={clientId} required disabled={loading}>
+                    <SelectTrigger className="mt-1 w-full">
+                        <SelectValue placeholder="Select client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {clients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                                {client.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div>
+                <label htmlFor="program" className="block text-sm font-medium text-gray-700">
+                    Program
+                </label>
+                <Select onValueChange={setProgramId} value={programId} required disabled={loading}>
+                    <SelectTrigger className="mt-1 w-full">
+                        <SelectValue placeholder="Select program" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {programs.map((program) => (
+                            <SelectItem key={program.id} value={program.id}>
+                                {program.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                    Status
+                </label>
+                <Select onValueChange={setStatus} value={status} disabled={loading}>
+                    <SelectTrigger className="mt-1 w-full">
+                        <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Enrolled">Enrolled</SelectItem>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                        <SelectItem value="Dropped Out">Dropped Out</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
+            <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={onClose} disabled={loading}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                    {loading ? 'Enrolling...' : 'Enroll Client'}
+                </Button>
+            </div>
+        </form>
+    );
+};
+
+const EnrollmentList = ({ enrollments, programs, clients }: { enrollments: any[], programs: any[], clients: any[] }) => {
+
+    const getClientName = (clientId: string) => {
+        const client = clients.find(c => c.id === clientId);
+        return client ? client.name : 'Unknown Client';
+    };
+
+    const getProgramName = (programId: string) => {
+        const program = programs.find(p => p.id === programId);
+        return program ? program.name : 'Unknown Program';
+    };
+
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Program</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Enrollment Date</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {enrollments.map((enrollment) => (
+                    <TableRow key={enrollment.id}>
+                        <TableCell>{getClientName(enrollment.clientId)}</TableCell>
+                        <TableCell>{getProgramName(enrollment.programId)}</TableCell>
+                        <TableCell>{enrollment.status}</TableCell>
+                        <TableCell>{enrollment.enrollmentDate}</TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    );
+};
+
+const EnrollmentManagement = () => {
+    const [enrollments, setEnrollments] = useState<any[]>([]);
+    const [isEnrolling, setIsEnrolling] = useState(false);
+    const [clients, setClients] = useState<any[]>([]);
+    const [programs, setPrograms] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch clients and programs
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const clientsData = await api.searchClient('');  // Fetch all clients
+            const programsData = await api.listPrograms();
+            // In a real app, you would fetch enrollments.  For this example, keep it empty.
+            setClients(clientsData);
+            setPrograms(programsData);
+            setEnrollments([]);
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch data');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleEnrollmentCreated = (newEnrollment: any) => {
+        setEnrollments((prevEnrollments) => [...prevEnrollments, newEnrollment]);
+        setIsEnrolling(false);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-semibold">Enrollment Management</h2>
+                <Button onClick={() => setIsEnrolling(true)} disabled={clients.length === 0 || programs.length === 0}>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Enroll Client in Program
+                </Button>
+            </div>
+
+            <AnimatePresence>
+                {isEnrolling && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Enroll Client in Program</CardTitle>
+                                <CardDescription>
+                                    Select a client and a program to enroll them in.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <EnrollmentForm
+                                    clients={clients}
+                                    programs={programs}
+                                    onEnrollmentCreated={handleEnrollmentCreated}
+                                    onClose={() => setIsEnrolling(false)}
+                                />
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {loading ? (
+                <div>Loading...</div> // Replace with a proper loading indicator
+            ) : error ? (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            ) : (
+                <EnrollmentList enrollments={enrollments} programs={programs} clients={clients} />
+            )}
+        </div>
+    );
+};
+
+// --- Main App Component ---
+const HealthInformationSystem = () => {
+    const [activeSection, setActiveSection] = useState('programs');
+
+    return (
+        <div className="min-h-screen bg-gray-100">
+            <header className="bg-white shadow">
+                <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                        Health Information System
+                    </h1>
+                </div>
+            </header>
+            <main>
+                <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {/* Sidebar */}
+                        <div className="md:col-span-1">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Menu</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-2">
+                                        <Button
+                                            variant={activeSection === 'programs' ? 'default' : 'ghost'}
+                                            className="w-full justify-start"
+                                            onClick={() => setActiveSection('programs')}
+                                        >
+                                            <Zap className="mr-2 h-4 w-4" />
+                                            Health Programs
+                                        </Button>
+                                        <Button
+                                            variant={activeSection === 'clients' ? 'default' : 'ghost'}
+                                            className="w-full justify-start"
+                                            onClick={() => setActiveSection('clients')}
+                                        >
+                                            <Users className="mr-2 h-4 w-4" />
+                                            Client Management
+                                        </Button>
+                                        <Button
+                                            variant={activeSection === 'enrollments' ? 'default' : 'ghost'}
+                                            className="w-full justify-start"
+                                            onClick={() => setActiveSection('enrollments')}
+                                        >
+                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                            Enrollments
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        {/* Main Content Area */}
+                        <div className="md:col-span-3">
+                            {activeSection === 'programs' && <ProgramManagement />}
+                            {activeSection === 'clients' && <ClientManagement />}
+                            {activeSection === 'enrollments' && <EnrollmentManagement />}
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    );
+};
+
+export default HealthInformationSystem;

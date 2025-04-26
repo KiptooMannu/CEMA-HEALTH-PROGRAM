@@ -6,11 +6,8 @@ import {
   updateHealthProgram,
   removeProgram,
 } from "./Programs.controller";
-import { authMiddleware } from "../middlewares/authmiddlewares";
 
 const router = new Hono();
-
-router.use("*", authMiddleware);
 
 router.post("/", createHealthProgram);
 router.get("/", listPrograms);

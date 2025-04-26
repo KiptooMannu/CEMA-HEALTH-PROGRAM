@@ -9,26 +9,25 @@ import authRouter from "./auth/auth.router";
 
 const app = new Hono();
 
-// Middlewares
-app.use("*", logger());
-app.use(
-  "*",
-  cors({
-    origin: ["http://localhost:3000"],
-    allowMethods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
+// Global Middleware (MUST be before routes)
+app.use(cors({
+  origin: '*',
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowHeaders: ['Content-Type', 'Authorization']
+}));
 
-// Routes
+
+
+// Now Routes (after middleware)
 app.route("/api/clients", clientRouter);
 app.route("/api/programs", programRouter);
 app.route("/api/enrollments", enrollmentRouter);
-app.route("/", authRouter)
+app.route("/", authRouter);
 
-// Health check
+// Health Check
 app.get("/health", (c) => c.text("OK"));
 
+// Server
 const port = parseInt(process.env.PORT || "3000");
 serve({
   fetch: app.fetch,

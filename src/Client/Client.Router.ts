@@ -6,11 +6,8 @@ import {
   updateClientProfile,
   getClientProfile,
 } from "./Client.controller";
-import { authMiddleware } from "../middlewares/authmiddlewares";
 
 const router = new Hono();
-
-router.use("*", authMiddleware);
 
 router.post("/", registerClient);
 router.get("/search", searchClient);

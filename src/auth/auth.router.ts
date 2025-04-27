@@ -1,45 +1,45 @@
-import { Hono } from 'hono';
-import { signup, loginUser, getCurrentUser } from './auth.controller';
-import { zValidator } from '@hono/zod-validator';
-import { authSchema ,registrationSchema } from './validator';
-import { authMiddleware } from '../middlewares/authmiddlewares';
+// import { Hono } from 'hono';
+// import { signup, loginUser, getCurrentUser } from './auth.controller';
+// import { zValidator } from '@hono/zod-validator';
+// import { authSchema ,registrationSchema } from './validator';
+// import { authMiddleware } from '../middlewares/authmiddlewares';
 
-export const authRouter = new Hono();
+// export const authRouter = new Hono();
 
-// Register system user
-// auth.router.ts
-authRouter.post(
-    "/signup", 
-    zValidator('json', registrationSchema, (result, c) => {
-        if (!result.success) {
-            return c.json({
-                error: "Validation failed",
-                details: result.error.issues
-            }, 400);
-        }
-    }), 
-    signup
-);
+// // Register system user
+// // auth.router.ts
+// authRouter.post(
+//     "/signup", 
+//     zValidator('json', registrationSchema, (result, c) => {
+//         if (!result.success) {
+//             return c.json({
+//                 error: "Validation failed",
+//                 details: result.error.issues
+//             }, 400);
+//         }
+//     }), 
+//     signup
+// );
 
-// Login system user
-authRouter.post(
-    "/login", 
-    zValidator('json', authSchema, (result, c) => {
-        if (!result.success) {
-            return c.json({
-                error: "Validation failed",
-                details: result.error.issues
-            }, 400);
-        }
-    }), 
-    loginUser
-);
+// // Login system user
+// authRouter.post(
+//     "/login", 
+//     zValidator('json', authSchema, (result, c) => {
+//         if (!result.success) {
+//             return c.json({
+//                 error: "Validation failed",
+//                 details: result.error.issues
+//             }, 400);
+//         }
+//     }), 
+//     loginUser
+// );
 
-// Get current user profile
-authRouter.get(
-    "/me", 
-    // authMiddleware, 
-    getCurrentUser
-);
+// // Get current user profile
+// authRouter.get(
+//     "/me", 
+//     // authMiddleware, 
+//     getCurrentUser
+// );
 
-export default authRouter;
+// export default authRouter;

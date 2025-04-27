@@ -5,7 +5,7 @@ import { logger } from "hono/logger";
 import { clientRouter } from "./Client/Client.Router";
 import { programRouter } from "./Programs/Programs.router";
 import { enrollmentRouter } from "./Entrollments/Entrollment.router";
-import authRouter from "./auth/auth.router";
+// import authRouter from "./auth/auth.router";
 
 const app = new Hono();
 
@@ -22,7 +22,7 @@ app.use(cors({
 app.route("/api/clients", clientRouter);
 app.route("/api/programs", programRouter);
 app.route("/api/enrollments", enrollmentRouter);
-app.route("/", authRouter);
+// app.route("/", authRouter);
 
 // Health Check
 app.get("/health", (c) => c.text("OK"));

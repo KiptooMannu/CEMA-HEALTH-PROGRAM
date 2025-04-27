@@ -4,6 +4,7 @@ import {
   updateEnrollment,
   getClientEnrollments,
   // getProgramEnrollments,
+  getAllEnrollments
 } from "./Entrollments.service";
 import { ApiResponse } from "../utils/apiResponse";
 
@@ -71,3 +72,15 @@ export const getClientPrograms = async (c: Context) => {
 //     return c.json(ApiResponse.error(error.message), 500);
 //   }
 // };
+
+
+
+// Get all enrollments
+export const getAllEnrollmentsController = async (c: Context) => {
+  try {
+      const enrollments = await getAllEnrollments();
+      return c.json(ApiResponse.success(enrollments, "All enrollments fetched successfully"));
+  } catch (error: any) {
+      return c.json(ApiResponse.error(error.message), 500);
+  }
+};

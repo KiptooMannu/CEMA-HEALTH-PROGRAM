@@ -127,3 +127,45 @@ export const getClientEnrollments = async (clientId: number): Promise<Enrollment
 //     } : null, // Changed undefined to null
 //   }));
 // };
+
+// Get all enrollments
+export const getAllEnrollments = async (): Promise<any[]> => {
+    const result = await db.query.enrollments.findMany({
+        with: {
+            client: true, // Eager load client data
+            program: true
+        }
+    });
+
+    return result.map(enrollment => ({
+        id: enrollment.id,
+        clientId: enrollment.clientId ?? null,
+        status: enrollment.status ?? null,
+        enrolledAt: enrollment.enrolledAt ?? null,
+        completedAt: enrollment.completedAt ?? null,
+        notes: enrollment.notes ?? null,
+        createdBy: enrollment.createdBy ?? null,
+        program: enrollment.program ? {
+            id: enrollment.program.id,
+            name: enrollment.program.name,
+            description: enrollment.program.description ?? null,
+            status: enrollment.program.status ?? null,
+            createdAt: enrollment.program.createdAt ?? null,
+            updatedAt: enrollment.program.updatedAt ?? null,
+            createdBy: enrollment.program.createdBy ?? null
+        } : null,
+        client: enrollment.client ? {
+            id: enrollment.client.id ?? null,
+            firstName: enrollment.client.first_name ?? null,
+            lastName: enrollment.client.last_name ?? null,
+            dateOfBirth: enrollment.client.dateOfBirth ?? null,
+            gender: enrollment.client.gender ?? null,
+            address: enrollment.client.address ?? null,
+            phone: enrollment.client.phone ?? null,
+            email: enrollment.client.email ?? null,
+            createdAt: enrollment.client.createdAt ?? null,
+            updatedAt: enrollment.client.updatedAt ?? null,
+            createdBy: enrollment.client.createdBy ?? null
+        } : null
+    }));
+};

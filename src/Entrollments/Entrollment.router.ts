@@ -4,6 +4,7 @@ import {
   updateEnrollmentStatus,
   getClientPrograms,
   // getProgramClients,
+  getAllEnrollmentsController
 } from "./Entrollment.controller";
 
 const router = new Hono();
@@ -19,5 +20,6 @@ router.get("/client/:clientId", getClientPrograms);
 
 // // Get clients for a specific program
 // router.get("/program/:programId", getProgramClients);
-
+// Get all enrollments
+router.get("/", getAllEnrollmentsController); 
 export { router as enrollmentRouter };

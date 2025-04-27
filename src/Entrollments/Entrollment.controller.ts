@@ -3,7 +3,7 @@ import {
   enrollClient,
   updateEnrollment,
   getClientEnrollments,
-  getProgramEnrollments,
+  // getProgramEnrollments,
 } from "./Entrollments.service";
 import { ApiResponse } from "../utils/apiResponse";
 
@@ -57,17 +57,17 @@ export const getClientPrograms = async (c: Context) => {
   }
 };
 
-// Get enrollments by program ID
-export const getProgramClients = async (c: Context) => {
-  try {
-    const programId = parseInt(c.req.param("programId"));
-    if (isNaN(programId)) {
-      return c.json(ApiResponse.error("Invalid program ID"), 400);
-    }
+// // Get enrollments by program ID
+// export const getProgramClients = async (c: Context) => {
+//   try {
+//     const programId = parseInt(c.req.param("programId"));
+//     if (isNaN(programId)) {
+//       return c.json(ApiResponse.error("Invalid program ID"), 400);
+//     }
 
-    const enrollments = await getProgramEnrollments(programId);
-    return c.json(ApiResponse.success(enrollments));
-  } catch (error: any) {
-    return c.json(ApiResponse.error(error.message), 500);
-  }
-};
+//     const enrollments = await getProgramEnrollments(programId);
+//     return c.json(ApiResponse.success(enrollments));
+//   } catch (error: any) {
+//     return c.json(ApiResponse.error(error.message), 500);
+//   }
+// };

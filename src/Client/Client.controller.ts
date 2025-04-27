@@ -5,6 +5,7 @@ import {
   searchClients,
   updateClient,
   getClientEnrollments,
+  getAllClientsFromDb // Add this import
 } from "./Client.service";
 import { ApiResponse } from "../utils/apiResponse";
 import { z } from "zod";
@@ -29,13 +30,17 @@ const normalizeClientData = (rawData: any) => ({
   phone: rawData.phone,
   email: rawData.email
 });
-
+// Client.controller.ts
 export const registerClient = async (c: Context) => {
+  console.log('Starting client registration process');
+  
   try {
     const rawData = await c.req.json();
-    
+    console.log('Received raw data:', JSON.stringify(rawData, null, 2));
+
     // Normalize field names to database schema
     const normalizedData = normalizeClientData(rawData);
+    console.log('Normalized data:', JSON.stringify(normalizedData, null, 2));
 
     // Validate input data
     const validationResult = ClientSchema.safeParse(normalizedData);
@@ -44,6 +49,7 @@ export const registerClient = async (c: Context) => {
         field: err.path[0],
         message: err.message
       }));
+      console.error('Validation failed:', errors);
       return c.json(ApiResponse.error("Validation failed", { errors }), 400);
     }
 
@@ -55,21 +61,36 @@ export const registerClient = async (c: Context) => {
         ? new Date(`${validationResult.data.dateOfBirth}T00:00:00.000Z`)
         : null
     };
+    console.log('Prepared DB data:', JSON.stringify({
+      ...dbData,
+      dateOfBirth: dbData.dateOfBirth?.toISOString()
+    }, null, 2));
 
+    console.log('Attempting to create client in database...');
     const newClient = await createClient(dbData);
+    console.log('Client successfully created:', JSON.stringify(newClient, null, 2));
+
     return c.json(
       ApiResponse.success(newClient, "Client registered successfully"), 
       201
     );
 
   } catch (error: any) {
-    console.error("Registration error:", error);
+    console.error('Registration process failed:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
     return c.json(
       ApiResponse.error(error.message || "Internal server error"), 
       500
     );
   }
 };
+
+
+
+
 
 export const getClient = async (c: Context) => {
   try {
@@ -158,5 +179,32 @@ export const getClientProfile = async (c: Context) => {
     return c.json(ApiResponse.success({ ...client, enrollments }));
   } catch (error: any) {
     return c.json(ApiResponse.error(error.message), 500);
+  }
+};
+
+
+
+export const getAllClients = async (c: Context): Promise<Response> => {
+  try {
+    console.log('Fetching all clients...');
+    const clients = await getAllClientsFromDb();
+    
+    if (!clients || clients.length === 0) {
+      console.log('No clients found in database');
+      return c.json(ApiResponse.success([], "No clients found"));
+    }
+
+    console.log(`Successfully retrieved ${clients.length} clients`);
+    return c.json(ApiResponse.success(clients, "Clients retrieved successfully"));
+  } catch (error: any) {
+    console.error('Error fetching clients:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    return c.json(
+      ApiResponse.error(error.message || "Failed to retrieve clients"), 
+      500
+    );
   }
 };
